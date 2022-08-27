@@ -1,46 +1,145 @@
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
+# import dash_core_components as dcc
+# import dash_html_components as html
 import pandas as pd
-import plotly.express as px
+#import plotly.express as px
+import numpy as np
+from dash.dependencies import Output, Input
 
 
-data = pd.read_csv("States.csv")
-data = data.query("state=='California'")
+data = pd.read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/rolling-averages/us-states.csv")
+#data = data.query("state=='California'")
 data["date"] = pd.to_datetime(data["date"], format="%Y-%m-%d")
 data.sort_values("date", inplace=True)
 
 app = dash.Dash(__name__)
-
-# Making the figure
-fig = px.line(data,
-             x="date",
-             y=["cases", "deaths"],
-             title="Total number of cases and deaths of Covid-19",
-             color_discrete_sequence=["red", "black"],
-             log_y=True,
-             )
-# Changing the axes' and legend's titles
-fig.update_layout(xaxis_title="Date",
-                  yaxis_title="Number",
-                  legend_title="",
-                  font=dict(
-                      family="Courier New, monospace",
-                      size=18,
-                  )
-                  )
+app.title = "Covid-19 Analytics"
 
 app.layout = html.Div(
     children=[
-        html.H1(children="Covid-19 Analytics",),
-        html.P(
-            children="Analyze the distribution of Covid-19 cases in the US",
+        html.Div(
+            children=[
+                html.Img(src="/assets/header-pic.png", className="header-img"),
+                html.H1(children="Covid-19 Analytics", className="header-title"),
+                html.P(
+                    children="Analyze the distribution of Covid-19 cases in the US",
+                    className="header-description"
+                ),
+            ],
+            className="header"
         ),
-        dcc.Graph(
-            figure=fig
-        )
+        html.Div(
+            children=[
+                html.Div(
+                    children=[
+                        html.Div(children="State", className="menu-title"),
+                        dcc.Dropdown(
+                            id="State-filter",
+                            options=[
+                                {"label": state, "value": state}
+                                for state in np.sort(data.state.unique())
+                            ],
+                            value="California",
+                            clearable=False,
+                            className="dropdown"
+                        )
+                    ]
+                ),
+                html.Div(
+                    children=[
+                        html.Div(children="Date Range", className="menu-title"),
+                        dcc.DatePickerRange(
+                            id="date-range",
+                            min_date_allowed=data.date.min().date(),
+                            max_date_allowed=data.date.max().date(),
+                            start_date=data.date.min().date(),
+                            end_date=data.date.max().date()
+                        )
+                    ]
+                )
+            ],
+            className="menu"
+        ),
+        html.Div(
+            children=[
+                # Graph for cases
+                html.Div(
+                    children=dcc.Graph(
+                        id="cases-per-day",
+                        config={"displayModeBar": False},
+                    ),
+                    className="card"
+                ),
+
+                # Graph for deaths per day
+                html.Div(
+                    children=dcc.Graph(
+                        id="deaths-per-day",
+                        config={"displayModeBar": False},
+                    ),
+                    className="card"
+                )
+            ],
+            className="wrapper"
+        ),
     ]
 )
+
+@app.callback(
+    [Output("cases-per-day", "figure"), Output("deaths-per-day", "figure")],
+    [
+        Input("State-filter", "value"),
+        Input("date-range", "start_date"),
+        Input("date-range", "end_date")
+    ]
+)
+def update_charts(state, start_date, end_date):
+    mask = (
+        (data.state == state)
+        & (data.date >= start_date)
+        & (data.date <= end_date)
+    )
+
+    filtered_data = data.loc[mask, :]
+    cases_chart_figure = {
+        "data": [
+            {
+                "x": filtered_data["date"],
+                "y": filtered_data["cases"],
+                "type": "lines"
+            }
+        ],
+        "layout": {
+            "title": {
+                "text": f"Number of cases per day for {state} state",
+                "x": 0.05,
+                "xanchor": "left"
+            },
+            "colorway": ["#17B897"]
+        }
+    }
+
+    deaths_chart_figure = {
+        "data": [
+            {
+                "x": filtered_data["date"],
+                "y": filtered_data["deaths"],
+                "type": "lines"
+            }
+        ],
+        "layout": {
+            "title": {
+                "text": f"Number of deaths per day for {state} state",
+                "x": 0.05,
+                "xanchor": "left"
+            },
+            "colorway": ["black"]
+        }
+    }
+
+    return cases_chart_figure, deaths_chart_figure
 
 if __name__ == "__main__":
     app.run_server(debug=True, host="127.0.0.1")
