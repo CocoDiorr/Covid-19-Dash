@@ -37,10 +37,7 @@ app.layout = html.Div(
                         html.Div(children="State", className="menu-title"),
                         dcc.Dropdown(
                             id="State-filter",
-                            options=[
-                                {"label": state, "value": state}
-                                for state in np.sort(data.state.unique())
-                            ],
+                            options=np.sort(data.state.unique()),
                             value="California",
                             clearable=False,
                             className="dropdown"
@@ -117,6 +114,8 @@ def update_charts(state, start_date, end_date):
                 "x": 0.05,
                 "xanchor": "left"
             },
+            # "xaxis": {"fixedrange": True},
+            # "yaxis": {"fixedrange": True},
             "colorway": ["#17B897"]
         }
     }
