@@ -46,6 +46,19 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     children=[
+                        html.Div(children="Metric", className="menu-title"),
+                        dcc.Dropdown(
+                            id="Metric-filter",
+                            options=list(data.columns.values)[3:],
+                            value="cases",
+                            clearable=False,
+                            className="dropdown"
+                        )
+                    ]
+                )
+                ,
+                html.Div(
+                    children=[
                         html.Div(children="Date Range", className="menu-title"),
                         dcc.DatePickerRange(
                             id="date-range",
@@ -64,20 +77,20 @@ app.layout = html.Div(
                 # Graph for cases
                 html.Div(
                     children=dcc.Graph(
-                        id="cases-per-day",
+                        id="graph",
                         config={"displayModeBar": False},
                     ),
                     className="card"
                 ),
 
                 # Graph for deaths per day
-                html.Div(
-                    children=dcc.Graph(
-                        id="deaths-per-day",
-                        config={"displayModeBar": False},
-                    ),
-                    className="card"
-                )
+                # html.Div(
+                #     children=dcc.Graph(
+                #         id="deaths-per-day",
+                #         config={"displayModeBar": False},
+                #     ),
+                #     className="card"
+                # )
             ],
             className="wrapper"
         ),
@@ -85,14 +98,16 @@ app.layout = html.Div(
 )
 
 @app.callback(
-    [Output("cases-per-day", "figure"), Output("deaths-per-day", "figure")],
+    #[Output("cases-per-day", "figure"), Output("deaths-per-day", "figure")],
+    [Output("graph", "figure")],
     [
         Input("State-filter", "value"),
+        Input("Metric-filter", "value"),
         Input("date-range", "start_date"),
         Input("date-range", "end_date")
     ]
 )
-def update_charts(state, start_date, end_date):
+def update_charts(state, metric, start_date, end_date):
     mask = (
         (data.state == state)
         & (data.date >= start_date)
@@ -100,17 +115,17 @@ def update_charts(state, start_date, end_date):
     )
 
     filtered_data = data.loc[mask, :]
-    cases_chart_figure = {
+    chart_figure = {
         "data": [
             {
                 "x": filtered_data["date"],
-                "y": filtered_data["cases"],
+                "y": filtered_data[metric],
                 "type": "lines"
             }
         ],
         "layout": {
             "title": {
-                "text": f"Number of cases per day for {state} state",
+                "text": f"{metric} per day for {state} state",
                 "x": 0.05,
                 "xanchor": "left"
             },
@@ -120,25 +135,26 @@ def update_charts(state, start_date, end_date):
         }
     }
 
-    deaths_chart_figure = {
-        "data": [
-            {
-                "x": filtered_data["date"],
-                "y": filtered_data["deaths"],
-                "type": "lines"
-            }
-        ],
-        "layout": {
-            "title": {
-                "text": f"Number of deaths per day for {state} state",
-                "x": 0.05,
-                "xanchor": "left"
-            },
-            "colorway": ["black"]
-        }
-    }
+    # deaths_chart_figure = {
+    #     "data": [
+    #         {
+    #             "x": filtered_data["date"],
+    #             "y": filtered_data["deaths"],
+    #             "type": "lines"
+    #         }
+    #     ],
+    #     "layout": {
+    #         "title": {
+    #             "text": f"Number of deaths per day for {state} state",
+    #             "x": 0.05,
+    #             "xanchor": "left"
+    #         },
+    #         "colorway": ["black"]
+    #     }
+    # }
 
-    return cases_chart_figure, deaths_chart_figure
+    #return cases_chart_figure, deaths_chart_figure
+    return [chart_figure,]
 
 if __name__ == "__main__":
     app.run_server(debug=True, host="127.0.0.1")
