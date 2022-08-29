@@ -7,6 +7,7 @@ import pandas as pd
 #import plotly.express as px
 import numpy as np
 from dash.dependencies import Output, Input
+from config import METRICS
 
 
 data = pd.read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/rolling-averages/us-states.csv")
@@ -50,7 +51,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             id="Metric-filter",
                             options=list(data.columns.values)[3:],
-                            value="cases",
+                            value="cases_avg",
                             clearable=False,
                             className="dropdown"
                         )
@@ -125,7 +126,7 @@ def update_charts(state, metric, start_date, end_date):
         ],
         "layout": {
             "title": {
-                "text": f"{metric} per day for {state} state",
+                "text": f"{METRICS[metric]} for {state} state",
                 "x": 0.05,
                 "xanchor": "left"
             },
