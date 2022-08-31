@@ -1,19 +1,14 @@
 import dash
 from dash import dcc
 from dash import html
-# import dash_core_components as dcc
-# import dash_html_components as html
 import pandas as pd
-#import plotly.express as px
 import numpy as np
 from dash.dependencies import Output, Input
 from config import METRICS
+from data_prep import join
 
 
-data = pd.read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/rolling-averages/us-states.csv")
-#data = data.query("state=='California'")
-data["date"] = pd.to_datetime(data["date"], format="%Y-%m-%d")
-data.sort_values("date", inplace=True)
+data = join()
 
 app = dash.Dash(__name__)
 app.title = "Covid-19 Analytics"
@@ -31,6 +26,8 @@ app.layout = html.Div(
             ],
             className="header"
         ),
+
+        # Menu
         html.Div(
             children=[
                 html.Div(
@@ -39,7 +36,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             id="State-filter",
                             options=np.sort(data.state.unique()),
-                            value="California",
+                            value="USA",
                             clearable=False,
                             className="dropdown"
                         )
@@ -73,6 +70,8 @@ app.layout = html.Div(
             ],
             className="menu"
         ),
+
+        # Graph
         html.Div(
             children=[
                 # Graph for cases
@@ -84,14 +83,14 @@ app.layout = html.Div(
                     className="card"
                 ),
 
-                # Graph for deaths per day
+                # Graph for counties
                 # html.Div(
                 #     children=dcc.Graph(
-                #         id="deaths-per-day",
+                #         id="counties",
                 #         config={"displayModeBar": False},
                 #     ),
                 #     className="card"
-                # )
+                # ),
             ],
             className="wrapper"
         ),
@@ -126,7 +125,7 @@ def update_charts(state, metric, start_date, end_date):
         ],
         "layout": {
             "title": {
-                "text": f"{METRICS[metric]} for {state} state",
+                "text": f"{METRICS[metric]} for {state} state" if state != "USA" else f"{METRICS[metric]} for USA",
                 "x": 0.05,
                 "xanchor": "left"
             },
@@ -136,26 +135,11 @@ def update_charts(state, metric, start_date, end_date):
         }
     }
 
-    # deaths_chart_figure = {
-    #     "data": [
-    #         {
-    #             "x": filtered_data["date"],
-    #             "y": filtered_data["deaths"],
-    #             "type": "lines"
-    #         }
-    #     ],
-    #     "layout": {
-    #         "title": {
-    #             "text": f"Number of deaths per day for {state} state",
-    #             "x": 0.05,
-    #             "xanchor": "left"
-    #         },
-    #         "colorway": ["black"]
-    #     }
-    # }
-
-    #return cases_chart_figure, deaths_chart_figure
     return [chart_figure,]
+
+# @app.callback(
+#     [Output("")]
+# )
 
 if __name__ == "__main__":
     app.run_server(debug=True, host="127.0.0.1")
